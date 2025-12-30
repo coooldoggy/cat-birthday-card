@@ -1,0 +1,20 @@
+{
+  "name": "시루",
+  "age": 1,
+  "date": "2026-03-19T18:00:00",
+  "location": "Our Home",
+  "message": "I’m turning 1 today! Please come say hi and send me love 🐱",
+  "about": "I love naps, snacks, boxes, and silently judging humans.",
+  "activities": [
+    "🎂 Cat cake time",
+    "🐟 Tuna treats",
+    "🧶 Toy play",
+    "📸 Photo time"
+  ],
+  "gifts": [
+    "🧶 New toys",
+    "🐟 Snacks",
+    "📦 Cardboard boxes",
+    "💖 Love"
+  ]
+}
