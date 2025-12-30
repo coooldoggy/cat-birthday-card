@@ -1,0 +1,27 @@
+.paw-progress {
+  position: fixed;
+  right: 16px;
+  bottom: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #ffe4ec;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,.15);
+}
+.paw-progress-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: #ff9ac1;
+  border-radius: 0 0 50% 50%;
+}
+.confetti {
+  position: fixed;
+  animation: confetti 1.2s ease-out forwards;
+}
+@keyframes confetti {
+  to { transform: translateY(120px) rotate(720deg); opacity: 0; }
+}
