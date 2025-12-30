@@ -1,128 +1,151 @@
-/* =========================
-   RESET & BASE
-========================= */
-
-* {
-  box-sizing: border-box;
+/* ➤ RESET + LAYOUT */
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
-html, body {
-  width: 100%;
-  height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
-  background: linear-gradient(180deg, #fff5f8, #ffeaf1);
+/* body + font + background */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  background: #fff7fa;
   color: #333;
-  overflow-x: hidden;
-}
-
-/* =========================
-   CARD LAYOUT
-========================= */
-
-.main {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  padding: 24px 12px 120px;
-}
-
-.card {
-  width: 100%;
-  max-width: 420px;
-  background: white;
-  border-radius: 28px;
-  padding: 28px 22px 40px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
-  text-align: center;
-}
-
-/* =========================
-   HERO
-========================= */
-
-.hero-title {
-  font-size: 28px;
-  font-weight: 800;
-  margin-bottom: 8px;
-}
-
-.hero-subtitle {
-  font-size: 15px;
-  opacity: 0.8;
-  margin-bottom: 18px;
-}
-
-.hero-image {
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin: 12px auto 20px;
-  box-shadow: 0 10px 24px rgba(0,0,0,.15);
-}
-
-/* =========================
-   SECTIONS
-========================= */
-
-.section {
-  margin-top: 28px;
-}
-
-.section h2 {
-  font-size: 20px;
-  margin-bottom: 10px;
-}
-
-.section p {
-  font-size: 15px;
   line-height: 1.6;
-  opacity: 0.9;
+  min-height: 100vh;
 }
 
-/* =========================
-   COUNTDOWN
-========================= */
-
-.countdown {
-  font-size: 18px;
-  font-weight: 600;
-  margin-top: 16px;
+main {
+  max-width: 600px;
+  margin: 0 auto;
+  padding-bottom: 60px;
 }
 
-/* =========================
-   CHECKBOX (GIFT)
-========================= */
-
-.gift {
-  margin-top: 32px;
+/* section spacing */
+section {
+  padding: 2rem 1rem;
 }
 
-.gift label {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 16px;
-  font-weight: 600;
+/* headings */
+h1,
+h2,
+h3 {
+  font-family: "Poppins", sans-serif;
+  color: #222;
+}
+
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+h2 {
+  font-size: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+/* paragraphs */
+p {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  color: #555;
+}
+
+/* buttons */
+button {
+  background: #ff9ac1;
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
   cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s;
 }
 
-.gift input {
-  width: 22px;
-  height: 22px;
+button:hover {
+  background: #ff81a8;
 }
 
-/* =========================
-   PAW PROGRESS BUTTON
-========================= */
+/* image defaults */
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
 
+/* forms */
+input[type="checkbox"] {
+  width: 1.3rem;
+  height: 1.3rem;
+  accent-color: #ff6fa8;
+}
+
+/* lists */
+ul {
+  list-style: none;
+}
+
+/* link colors */
+a {
+  color: #ff6fa8;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* ➤ PASTEL SECTION BACKGROUNDS */
+.bg-soft-pink {
+  background: #ffe4ec;
+}
+
+.bg-light-yellow {
+  background: #fffbe6;
+}
+
+.bg-light-blue {
+  background: #e8f4ff;
+}
+
+/* HERO SECTION */
+.hero-container {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: #ffd5e5;
+  border-bottom-left-radius: 3rem;
+  border-bottom-right-radius: 3rem;
+}
+
+/* PHOTO CAROUSEL */
+.photo-carousel-image {
+  width: 260px;
+  height: 260px;
+  border-radius: 2rem;
+  object-fit: cover;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* CONFETTI */
+@keyframes confetti {
+  to {
+    transform: translateY(120px) rotate(720deg);
+    opacity: 0;
+  }
+}
+.confetti {
+  position: fixed;
+  font-size: 16px;
+  animation: confetti 1.2s ease-out forwards;
+}
+
+/* PAW PROGRESS */
 .paw-progress {
   position: fixed;
-  right: 16px;
-  bottom: 20px;
+  right: 1rem;
+  bottom: 1rem;
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -130,62 +153,17 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 6px 20px rgba(0,0,0,.15);
-  overflow: hidden;
-  z-index: 999;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  z-index: 50;
 }
-
-/* progress fill */
+.paw-progress span {
+  font-size: 28px;
+}
 .paw-progress-fill {
   position: absolute;
   bottom: 0;
   width: 100%;
-  height: 0%;
   background: #ff9ac1;
-  transition: height 0.15s linear;
-}
-
-/* paw icon */
-.paw-progress span {
-  position: relative;
-  font-size: 26px;
-  z-index: 2;
-}
-
-/* =========================
-   CONFETTI
-========================= */
-
-.confetti {
-  position: fixed;
-  top: -20px;
-  font-size: 18px;
-  animation: confetti-fall 1.2s ease-out forwards;
-  pointer-events: none;
-  z-index: 9999;
-}
-
-@keyframes confetti-fall {
-  0% {
-    transform: translateY(0) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(140px) rotate(720deg);
-    opacity: 0;
-  }
-}
-
-/* =========================
-   SMALL DEVICES FIX
-========================= */
-
-@media (max-width: 360px) {
-  .card {
-    padding: 22px 16px 32px;
-  }
-
-  .hero-title {
-    font-size: 24px;
-  }
+  border-radius: 0 0 50% 50%;
+  transition: height 0.2s ease;
 }
