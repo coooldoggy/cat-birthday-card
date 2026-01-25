@@ -2,14 +2,14 @@
   "name": "시루",
   "age": 1,
   "date": "2026-03-19T18:00:00",
-  "location": "Our Home",
+  "location": "스타벅스 강변점",
   "message": "I’m turning 1 today! Please come say hi and send me love 🐱",
   "about": "I love naps, snacks, boxes, and silently judging humans.",
   "activities": [
-    "🎂 Cat cake time",
-    "🐟 Tuna treats",
-    "🧶 Toy play",
-    "📸 Photo time"
+    "🎂 생일축하 노래부르기",
+    "🐟 간식 먹기",
+    "🧶 쓰다듬기, 장난감 휘두르기",
+    "📸 사진 찍기"
   ],
   "gifts": [
     "🧶 New toys",

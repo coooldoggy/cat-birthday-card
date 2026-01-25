@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import birthday from "@/assets/data/birthday.json";
 
 interface Message {
   id: string;
@@ -7,269 +8,199 @@ interface Message {
   timestamp: number;
 }
 
+const AVATAR_ICONS = ["person", "favorite", "child_care", "pets"];
+
+function confetti() {
+  for (let i = 0; i < 12; i++) {
+    const el = document.createElement("div");
+    el.className = "confetti";
+    el.innerText = ["🎉", "✨", "💖", "🎈", "🎊", "⭐"][i % 6];
+    el.style.left = Math.random() * 100 + "%";
+    el.style.top = "-10px";
+    el.style.fontSize = 16 + Math.random() * 8 + "px";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }
+}
+
 export default function GuestBook() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 로컬 스토리지에서 메시지 불러오기
-  useEffect(() => {
-    const savedMessages = localStorage.getItem("birthdayMessages");
-    if (savedMessages) {
-      try {
-        setMessages(JSON.parse(savedMessages));
-      } catch (e) {
-        console.error("Failed to load messages", e);
-      }
+  const fetchMessages = useCallback(async () => {
+    try {
+      setError(null);
+      const res = await fetch("/api/messages");
+      if (!res.ok) throw new Error("메시지를 불러오지 못했어요.");
+      const data = await res.json();
+      setMessages(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "오류가 났어요.");
+      setMessages([]);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  // 메시지 저장
-  const saveMessages = (newMessages: Message[]) => {
-    localStorage.setItem("birthdayMessages", JSON.stringify(newMessages));
-    setMessages(newMessages);
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
+
+  const formatTime = (ts: number) => {
+    const now = Date.now();
+    const diff = now - ts;
+    if (diff < 3600000) return "방금 전";
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}시간 전`;
+    if (diff < 172800000) return "어제";
+    return new Date(ts).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
   };
 
-  // 메시지 제출
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
-
     setIsSubmitting(true);
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      name: name.trim() || "익명",
-      message: message.trim(),
-      timestamp: Date.now(),
-    };
-
-    const updatedMessages = [newMessage, ...messages];
-    saveMessages(updatedMessages);
-    setName("");
-    setMessage("");
-    setIsSubmitting(false);
-    
-    // 저장 완료 피드백
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
-
-    // 축하 애니메이션
-    const confetti = () => {
-      for (let i = 0; i < 15; i++) {
-        const e = document.createElement("div");
-        e.className = "confetti";
-        e.innerText = ["🎉", "✨", "💖", "🎈", "🎊", "⭐"][i % 6];
-        e.style.left = Math.random() * 100 + "%";
-        e.style.top = "-10px";
-        e.style.fontSize = (16 + Math.random() * 8) + "px";
-        document.body.appendChild(e);
-        setTimeout(() => e.remove(), 1200);
+    setShowSuccess(false);
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), message: message.trim() }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || "저장에 실패했어요.");
       }
-    };
-    confetti();
-  };
-
-  // 메시지 삭제 (더블클릭)
-  const handleDelete = (id: string) => {
-    if (confirm("메시지를 삭제하시겠어요?")) {
-      const updatedMessages = messages.filter((msg) => msg.id !== id);
-      saveMessages(updatedMessages);
+      const newMsg = await res.json();
+      setMessages((prev) => [newMsg, ...prev]);
+      setName("");
+      setMessage("");
+      setError(null);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+      confetti();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "저장에 실패했어요.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString("ko-KR", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const handleDelete = async (id: string) => {
+    if (!confirm("메시지를 삭제할까요?")) return;
+    try {
+      const res = await fetch(`/api/messages?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("삭제 실패");
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+    } catch {
+      setError("삭제에 실패했어요.");
+    }
   };
 
   return (
-    <section className="fade-in invitation-section" style={{ padding: "1.5rem", textAlign: "center" }}>
-      <h2 style={{
-        fontSize: "1.3rem",
-        marginBottom: "1rem",
-        color: "#3d2a1a",
-        textShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
-        fontFamily: "'Comfortaa', sans-serif",
-        letterSpacing: "0.05em"
-      }}>
-        💌 축하 메시지
-      </h2>
-
-      {/* 메시지 입력 폼 */}
-      <div style={{
-        background: "rgba(250, 248, 243, 0.95)",
-        padding: "1.5rem",
-        borderRadius: "1rem",
-        border: "2px solid #1a1a1a",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5)",
-        marginBottom: "1.5rem"
-      }}>
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "1rem" }}>
-            <input
-              type="text"
-              placeholder="이름 (선택사항)"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                borderRadius: "0.5rem",
-                border: "2px solid #8b4513",
-                background: "#faf8f3",
-                fontSize: "0.95rem",
-                color: "#1a1a1a",
-                fontFamily: "'Poppins', sans-serif"
-              }}
-            />
-          </div>
-          <div style={{ marginBottom: "1rem" }}>
-            <textarea
-              placeholder="축하 메시지를 남겨주세요 💕"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={4}
-              required
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                borderRadius: "0.5rem",
-                border: "2px solid #8b4513",
-                background: "#faf8f3",
-                fontSize: "0.95rem",
-                color: "#1a1a1a",
-                fontFamily: "'Poppins', sans-serif",
-                resize: "vertical",
-                minHeight: "100px"
-              }}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isSubmitting || !message.trim()}
-            style={{
-              width: "100%",
-              padding: "0.75rem 1.5rem",
-              fontSize: "1rem",
-              fontWeight: "600",
-              opacity: isSubmitting || !message.trim() ? 0.6 : 1,
-              cursor: isSubmitting || !message.trim() ? "not-allowed" : "pointer"
-            }}
-          >
-            {isSubmitting ? "전송 중..." : "메시지 남기기 🎉"}
-          </button>
-        </form>
-        {showSuccess && (
-          <div style={{
-            marginTop: "1rem",
-            padding: "0.75rem",
-            background: "linear-gradient(135deg, rgba(61, 42, 26, 0.15) 0%, rgba(139, 69, 19, 0.1) 100%)",
-            borderRadius: "0.5rem",
-            fontSize: "0.9rem",
-            color: "#1a1a1a",
-            fontWeight: "600",
-            border: "2px solid #3d2a1a",
-            animation: "fadeIn 0.5s ease-out"
-          }}>
-            ✅ 메시지가 저장되었습니다!
-          </div>
-        )}
+    <div id="guestbook" className="guestbook-page">
+      <div className="guestbook-headline">
+        <h1 className="guestbook-headline-title">
+          {birthday.name}에게 축하 메시지를 남겨주세요!
+        </h1>
+        <p className="guestbook-headline-sub">
+          {birthday.name}의 {birthday.age}번째 생일을 축하하는 따뜻한 한마디를 기다려요.
+        </p>
       </div>
 
-      {/* 메시지 목록 */}
-      <div style={{
-        maxHeight: "500px",
-        overflowY: "auto",
-        paddingRight: "0.5rem"
-      }}>
-        {messages.length === 0 ? (
-          <div style={{
-            padding: "2rem",
-            color: "#8b4513",
-            fontStyle: "italic",
-            fontSize: "0.95rem"
-          }}>
-            아직 메시지가 없어요. 첫 번째 축하 메시지를 남겨주세요! 💕
-          </div>
-        ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              onDoubleClick={() => handleDelete(msg.id)}
-              style={{
-                background: "linear-gradient(135deg, rgba(250, 248, 243, 0.95) 0%, rgba(245, 240, 232, 0.9) 100%)",
-                padding: "1.25rem",
-                borderRadius: "0.75rem",
-                marginBottom: "1rem",
-                border: "2px solid #1a1a1a",
-                boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5)",
-                textAlign: "left",
-                transition: "all 0.3s ease",
-                cursor: "pointer",
-                position: "relative"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0, 0, 0, 0.15)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 2px 10px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5)";
-              }}
-            >
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "0.5rem"
-              }}>
-                <div style={{
-                  fontSize: "1rem",
-                  fontWeight: "600",
-                  color: "#1a1a1a",
-                  fontFamily: "'Comfortaa', sans-serif"
-                }}>
-                  {msg.name}
-                </div>
-                <div style={{
-                  fontSize: "0.75rem",
-                  color: "#8b4513",
-                  opacity: 0.7
-                }}>
-                  {formatDate(msg.timestamp)}
-                </div>
-              </div>
-              <div style={{
-                fontSize: "0.95rem",
-                color: "#2c2c2c",
-                lineHeight: "1.6",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word"
-              }}>
-                {msg.message}
-              </div>
-              <div style={{
-                position: "absolute",
-                bottom: "5px",
-                right: "10px",
-                fontSize: "0.7rem",
-                color: "#8b4513",
-                opacity: 0.5
-              }}>
-                더블클릭으로 삭제
-              </div>
+      <div className="guestbook-main">
+        <div className="guestbook-card-single">
+          <div className="guestbook-card-header">
+            <div className="guestbook-card-title-wrap">
+              <span className="material-symbols-outlined guestbook-icon">chat</span>
+              <h2 className="guestbook-card-title">축하 메시지</h2>
             </div>
-          ))
-        )}
+            <span className="guestbook-badge">{messages.length}개의 메시지</span>
+          </div>
+
+          {error && (
+            <p className="guestbook-error" style={{ marginBottom: "1rem", color: "#c00", fontSize: "0.9rem" }}>
+              {error}
+            </p>
+          )}
+
+          <div className="guestbook-messages">
+            {loading ? (
+              <p className="guestbook-empty">불러오는 중…</p>
+            ) : messages.length === 0 ? (
+              <p className="guestbook-empty">아직 메시지가 없어요. 첫 축하 메시지를 남겨주세요! 💕</p>
+            ) : (
+              messages.map((msg, idx) => (
+                <div
+                  key={msg.id}
+                  className={`guestbook-msg ${idx % 2 === 1 ? "reverse" : ""}`}
+                  onDoubleClick={() => handleDelete(msg.id)}
+                >
+                  <div className={`guestbook-msg-avatar ${idx % 2 === 1 ? "accent-pink" : ""}`}>
+                    <span className="material-symbols-outlined">
+                      {AVATAR_ICONS[idx % AVATAR_ICONS.length]}
+                    </span>
+                  </div>
+                  <div className="guestbook-msg-bubble">
+                    <p className="guestbook-msg-name">{msg.name}</p>
+                    <p className="guestbook-msg-text">{msg.message}</p>
+                    <span className="guestbook-msg-time">{formatTime(msg.timestamp)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="guestbook-form-wrap">
+            {showSuccess && (
+              <p className="guestbook-success">✅ 메시지가 저장되었어요!</p>
+            )}
+            <form onSubmit={handleSubmit} className="guestbook-form">
+              <input
+                type="text"
+                className="guestbook-input"
+                placeholder="성함을 입력해주세요"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <div className="guestbook-textarea-wrap">
+                <textarea
+                  className="guestbook-textarea"
+                  placeholder={`${birthday.name}를 위한 축하 메시지를 남겨주세요...`}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  required
+                  rows={4}
+                />
+                <button
+                  type="submit"
+                  className="guestbook-send-btn"
+                  disabled={isSubmitting || !message.trim()}
+                  aria-label="보내기"
+                >
+                  <span className="material-symbols-outlined">pets</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div id="gift-policy" className="gift-policy-block">
+          <div className="gift-policy-inner">
+            <h3 className="gift-policy-title">선물 안내</h3>
+            <p className="gift-policy-text">
+              선물은 정중히 사양합니다! 여러분의 참석과 {birthday.name}를 향한 사랑만으로도 충분합니다.
+            </p>
+          </div>
+          <span className="material-symbols-outlined gift-policy-deco">card_giftcard</span>
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
-
