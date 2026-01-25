@@ -24,7 +24,9 @@ npm run dev
 
 1. [Neon](https://neon.tech)에서 프로젝트 생성 후 **Connection string** 복사
 2. Vercel → 프로젝트 → **Settings** → **Environment Variables**
-3. `DATABASE_URL` 또는 `POSTGRES_URL` 이름으로 연결 문자열 추가
+3. `DATABASE_URL` 또는 `POSTGRES_URL` 이름으로 **순수 연결 문자열만** 추가  
+   - ✅ 올바름: `postgresql://user:pass@host.neon.tech/neondb?sslmode=require`  
+   - ❌ 틀림: `psql 'postgresql://...'` (앞의 `psql '` 와 따옴표 제거)
 4. **Redeploy**
 
 ### 테이블 생성

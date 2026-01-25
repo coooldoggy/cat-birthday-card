@@ -1,9 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { neon } from "@neondatabase/serverless";
 
-const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
-const sql = connectionString ? neon(connectionString) : null;
-
 export interface GuestMessage {
   id: string;
   name: string;
@@ -11,8 +8,27 @@ export interface GuestMessage {
   timestamp: number;
 }
 
-async function ensureTable() {
-  if (!sql) throw new Error("No database");
+/** psql 'postgresql://...' 형식이 들어오면 순수 URL만 추출 */
+function sanitizeConnectionString(s: string | undefined): string | null {
+  if (!s || typeof s !== "string") return null;
+  let u = s.trim();
+  if (u.startsWith("psql '") && u.endsWith("'")) {
+    u = u.slice(6, -1).trim();
+  } else if (u.startsWith('psql "') && u.endsWith('"')) {
+    u = u.slice(6, -1).trim();
+  }
+  if (!u.startsWith("postgres://") && !u.startsWith("postgresql://")) return null;
+  return u;
+}
+
+function getSql() {
+  const raw = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+  const connectionString = sanitizeConnectionString(raw ?? "");
+  if (!connectionString) return null;
+  return neon(connectionString);
+}
+
+async function ensureTable(sql: ReturnType<typeof neon>) {
   await sql`
     CREATE TABLE IF NOT EXISTS guestbook_messages (
       id TEXT PRIMARY KEY,
@@ -31,18 +47,20 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const sql = getSql();
   if (!sql) {
     return res.status(500).json({
-      error: "Database not configured. Set POSTGRES_URL or DATABASE_URL (e.g. Vercel Postgres / Neon).",
+      error: "Database not configured. Vercel에서 DATABASE_URL을 설정했는지, **순수 연결 문자열**(postgresql://...)만 넣었는지 확인해 주세요. psql '...' 형식은 넣지 마세요.",
     });
   }
 
   try {
-    await ensureTable();
+    await ensureTable(sql);
   } catch (e) {
     console.error("DB init error:", e);
+    const msg = e instanceof Error ? e.message : String(e);
     return res.status(500).json({
-      error: "Database error. Check POSTGRES_URL / DATABASE_URL.",
+      error: `DB 연결/테이블 오류: ${msg}. DATABASE_URL과 Neon 프로젝트를 확인해 주세요.`,
     });
   }
 
@@ -53,12 +71,14 @@ export default async function handler(
         FROM guestbook_messages
         ORDER BY created_at DESC
       `;
-      const messages: GuestMessage[] = (Array.isArray(rows) ? rows : []).map((r: { id: string; name: string; message: string; timestamp: number }) => ({
-        id: String(r.id),
-        name: String(r.name),
-        message: String(r.message),
-        timestamp: Number(r.timestamp),
-      }));
+      const messages: GuestMessage[] = (Array.isArray(rows) ? rows : []).map(
+        (r: { id: string; name: string; message: string; timestamp: number }) => ({
+          id: String(r.id),
+          name: String(r.name),
+          message: String(r.message),
+          timestamp: Number(r.timestamp),
+        })
+      );
       return res.status(200).json(messages);
     }
 
@@ -95,6 +115,7 @@ export default async function handler(
     }
   } catch (err) {
     console.error("messages API error:", err);
-    return res.status(500).json({ error: "Failed to process request" });
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: `요청 처리 실패: ${msg}` });
   }
 }
